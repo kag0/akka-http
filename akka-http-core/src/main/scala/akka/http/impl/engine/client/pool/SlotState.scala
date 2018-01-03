@@ -54,8 +54,6 @@ private[pool] sealed abstract class SlotState extends Product {
 
   def onNewRequest(ctx: SlotContext, requestContext: RequestContext): SlotState = illegalState(ctx, "new request")
 
-  /** Will be called either immediately if the request entity is strict or otherwise later */
-  def onRequestEntityCompleted(ctx: SlotContext): SlotState = illegalState(ctx, "request entity completed")
   def onRequestEntityFailed(ctx: SlotContext, cause: Throwable): SlotState = illegalState(ctx, "request entity failed")
 
   def onResponseReceived(ctx: SlotContext, response: HttpResponse): SlotState = illegalState(ctx, "receive response")
@@ -195,12 +193,6 @@ private[pool] object SlotState {
     }
   }
   final case class WaitingForEndOfRequestEntity(ongoingRequest: RequestContext) extends ConnectedState with BusyState {
-    override def onRequestEntityCompleted(ctx: SlotContext): SlotState =
-      WaitingForResponse(ongoingRequest)
-
-    // connection failures are handled by BusyState implementations
-  }
-  final case class WaitingForResponse(ongoingRequest: RequestContext) extends ConnectedState with BusyState {
     override def onResponseReceived(ctx: SlotContext, response: HttpResponse): SlotState =
       WaitingForResponseDispatch(ongoingRequest, Success(response))
 
