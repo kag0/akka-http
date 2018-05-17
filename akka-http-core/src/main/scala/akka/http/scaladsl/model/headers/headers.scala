@@ -8,19 +8,19 @@ import java.lang.Iterable
 import java.net.InetSocketAddress
 import java.security.MessageDigest
 import java.util
+
 import javax.net.ssl.SSLSession
-
-import akka.annotation.{ ApiMayChange, InternalApi }
+import akka.annotation.{ApiMayChange, InternalApi}
 import akka.stream.scaladsl.ScalaSessionAPI
-
 import scala.reflect.ClassTag
-import scala.util.{ Failure, Success, Try }
+import scala.util.{Failure, Success, Try}
 import scala.annotation.tailrec
 import scala.collection.immutable
+
 import akka.parboiled2.util.Base64
 import akka.event.Logging
 import akka.http.impl.util._
-import akka.http.javadsl.{ model ⇒ jm }
+import akka.http.javadsl.{model, model ⇒ jm}
 import akka.http.scaladsl.model._
 
 sealed abstract class ModeledCompanion[T: ClassTag] extends Renderable {
@@ -961,6 +961,25 @@ final case class `User-Agent`(products: immutable.Seq[ProductVersion]) extends j
 
   /** Java API */
   def getProducts: Iterable[jm.headers.ProductVersion] = products.asJava
+}
+
+object Via extends ModeledCompanion[Via]
+final case class Via(hops: immutable.Seq[ViaHop]) extends jm.headers.Via with RequestResponseHeader {
+
+  protected[http] def renderValue[R <: Rendering](r: R): r.type = ???
+
+  protected def companion = Via
+
+  private implicit val javaMapping = new JavaMapping[jm.ViaHop, ViaHop] {
+    def toJava(scalaObject: ViaHop): jm.ViaHop = scalaObject
+
+    def toScala(javaObject: jm.ViaHop): ViaHop = {
+      ViaHop(javaObject.protocolName, javaObject.protocolVersion, javaObject.receivedBy.left.map(_.asScala), None)
+    }
+  }
+
+  /** Java API */
+  def getHops: Iterable[jm.ViaHop] = JavaMapping.toJava(hops)(JavaMapping.iterableMapping(javaMapping))
 }
 
 // http://tools.ietf.org/html/rfc7235#section-4.1

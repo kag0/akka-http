@@ -104,6 +104,7 @@ trait ReverseProxyDirectives {
     val outgoingHeaders = incomingHeaders.flatMap {
       case _: `X-Real-Ip`           ⇒ updatedXRealIpHeaderOption
       case _: `X-Forwarded-For`     ⇒ updatedXForwardedForHeaderOption
+      // strip hop-by-hop headers https://tools.ietf.org/html/rfc2616#section-13.5.1
       case _: `Timeout-Access`      ⇒ Nil
       case _: Connection            ⇒ Nil
       // keep alive header is not included in modeled headers
