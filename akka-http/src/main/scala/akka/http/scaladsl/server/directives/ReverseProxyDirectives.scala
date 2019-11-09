@@ -20,13 +20,13 @@ import akka.util.ByteString
 trait ReverseProxyDirectives {
 
   def reverseProxy(target: ReverseProxyTargetMagnet): Route =
-    extractExecutionContext { implicit ec ⇒
-      extractMaterializer { implicit mat ⇒
+    extractExecutionContext { implicit ec =>
+      extractMaterializer { implicit mat =>
         // todo customize response
         // drain response entity if incoming request timeout occurs
-        def processTimeout(proxyResult: Future[HttpResponse]): HttpRequest ⇒ HttpResponse = _ ⇒ {
+        def processTimeout(proxyResult: Future[HttpResponse]): HttpRequest => HttpResponse = _ => {
           proxyResult.andThen {
-            case Success(proxyResponse) ⇒ proxyResponse.discardEntityBytes()
+            case Success(proxyResponse) => proxyResponse.discardEntityBytes()
           }
 
           HttpResponse(StatusCodes.ServiceUnavailable, entity =
@@ -37,7 +37,7 @@ trait ReverseProxyDirectives {
           )
         }
 
-        extractRequestContext { ctx ⇒
+        extractRequestContext { ctx =>
           // we don't need to use request.effectiveUri here since we're going to overwrite the scheme and authority
           val incomingUri = ctx.request.uri
           val outgoingUri =
@@ -74,18 +74,18 @@ trait ReverseProxyDirectives {
       .map(`X-Forwarded-For`(_))
 
     val outgoingHeaders = incomingHeaders.flatMap {
-      case _: `X-Real-Ip`           ⇒ updatedXRealIpHeaderOption
-      case _: `X-Forwarded-For`     ⇒ updatedXForwardedForHeaderOption
-      case _: `Timeout-Access`      ⇒ Nil
-      case _: Connection            ⇒ Nil
+      case _: `X-Real-Ip`           => updatedXRealIpHeaderOption
+      case _: `X-Forwarded-For`     => updatedXForwardedForHeaderOption
+      case _: `Timeout-Access`      => Nil
+      case _: Connection            => Nil
       // keep alive header is not included in modeled headers
-      case _: `Proxy-Authenticate`  ⇒ Nil
-      case _: `Proxy-Authorization` ⇒ Nil
-      case _: `Transfer-Encoding`   ⇒ Nil
-      case h if h.is("te")          ⇒ Nil
-      case h if h.is("trailers")    ⇒ Nil
-      case _: Upgrade               ⇒ Nil
-      case h                        ⇒ Some(h)
+      case _: `Proxy-Authenticate`  => Nil
+      case _: `Proxy-Authorization` => Nil
+      case _: `Transfer-Encoding`   => Nil
+      case h if h.is("te")          => Nil
+      case h if h.is("trailers")    => Nil
+      case _: Upgrade               => Nil
+      case h                        => Some(h)
     }
 
     request.withHeaders(outgoingHeaders)
@@ -111,7 +111,7 @@ object ReverseProxyDirectives extends ReverseProxyDirectives {
 
   trait ReverseProxyTargetMagnet {
     def config: ReverseProxyTargetConfig
-    def httpClient: HttpRequest ⇒ Future[HttpResponse]
+    def httpClient: HttpRequest => Future[HttpResponse]
   }
 
   object ReverseProxyTargetMagnet {
@@ -120,7 +120,7 @@ object ReverseProxyDirectives extends ReverseProxyDirectives {
     implicit def fromConfig(targetConfig: ReverseProxyTargetConfig)(implicit system: ActorSystem) =
       new ReverseProxyTargetMagnet {
         val config = targetConfig
-        val httpClient: HttpRequest ⇒ Future[HttpResponse] = Http().singleRequest(_)
+        val httpClient: HttpRequest => Future[HttpResponse] = Http().singleRequest(_)
       }
 
     implicit def fromUri(uri: Uri)(implicit system: ActorSystem) = fromConfig(ReverseProxyTargetConfigImpl(uri, false))

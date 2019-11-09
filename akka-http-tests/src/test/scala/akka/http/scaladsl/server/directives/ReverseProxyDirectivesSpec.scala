@@ -74,7 +74,7 @@ trait ReverseProxyDirectiveSpecHelper {
   val magnet = new ReverseProxyTargetMagnet {
     def config = targetConfig
 
-    val httpClient: HttpRequest ⇒ Future[HttpResponse] = request ⇒ {
+    val httpClient: HttpRequest => Future[HttpResponse] = request => {
       receivedRequest = request
       Future.successful(HttpResponse())
     }
